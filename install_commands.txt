@@ -1,0 +1,32 @@
+# ============== docker搭建redis集群命令 ==============
+# 先创建配置文件
+docker-compose.yml、nodes-639[2-7].conf；前者是集群配置，后者是个节点配置
+
+# 创建并启动容器
+docker-compose up -d
+
+# 创建集群
+/Users/weichangming/install/redis-5.0.5/src/redis-cli --cluster create 172.50.0.2:6392 172.50.0.3:6393 172.50.0.4:6394 172.50.0.5:6395 172.50.0.6:6396 172.50.0.7:6397 --cluster-replicas 1
+
+# 安装docker-connector服务端
+brew install wenjunxiao/brew/docker-connector
+
+# 将docker的所有子网信息加入到docker-connector服务端配置文件中
+docker network ls --filter driver=bridge --format "{{.ID}}" | xargs docker network inspect --format "route {{range .IPAM.Config}}{{.Subnet}}{{end}}" >> /usr/local/etc/docker-connector.conf
+
+# 启动docker-connector服务端进程
+brew services start docker-connector
+
+# 下载docker-connector客户端镜像
+docker pull wenjunxiao/mac-docker-connector
+
+# 创建并启动docker-connector客户端容器
+docker run -it -d --restart always --net host --cap-add NET_ADMIN --name connector wenjunxiao/mac-docker-connector
+
+# ============== 其他常用命令 ==============
+# 删除节点自动生成的元数据文件
+ls  | grep "nodes\d.conf"| xargs rm -f
+rm -f dump.rdb
+
+# 连接并进入容器
+docker exec -it redis-master1 /bin/bash
